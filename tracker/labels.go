@@ -46,7 +46,7 @@ func ReplaceBoundingBox(tr *track, bb *image.Rectangle) *track {
 func (t *myTracker) RenameFromMatches(matches []int, matchinMtx [][]float64, oldDets, newDets []*track) ([]*track, []*track, []*track) {
 	// Fill up a map with the indices of newDetections we have
 	notUsed := make(map[int]struct{})
-	for i, _ := range newDets {
+	for i := range newDets {
 		notUsed[i] = struct{}{}
 	}
 
