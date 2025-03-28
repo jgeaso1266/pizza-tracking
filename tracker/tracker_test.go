@@ -16,8 +16,8 @@ import (
 	"go.viam.com/rdk/services/vision"
 	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/rdk/vision/classification"
-	"go.viam.com/rdk/vision/viscapture"
 	objdet "go.viam.com/rdk/vision/objectdetection"
+	"go.viam.com/rdk/vision/viscapture"
 	"go.viam.com/test"
 )
 
@@ -368,34 +368,44 @@ func TestTracker(t *testing.T) {
 
 func TestInvalidCameraNamesError(t *testing.T) {
 	ctx := context.Background()
+	var img image.Image
+	rect := image.Rect(0, 0, 10, 10)
+	img = rimage.NewImageFromBounds(rect)
+
 	fakeTracker := &myTracker{
-		camName: "test",
+		camName:       "test",
 		cancelContext: ctx,
 	}
+	fakeTracker.currImg.Store(&img)
 
 	invalidName := "not-camera"
 	invalidNameErrorMessage := "Camera name given to method, not-camera is not the same as configured camera test"
+	emptyMap := make(map[string]interface{})
 
 	// Test invalid camera name in DetectionsFromCamera
-	_, err := fakeTracker.DetectionsFromCamera(ctx, invalidName, make(map[string]interface{}))
+	_, err := fakeTracker.DetectionsFromCamera(ctx, invalidName, emptyMap)
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
 
 	// Test empty (valid) camera name in DetectionsFromCamera
-	_, err = fakeTracker.DetectionsFromCamera(ctx, "", make(map[string]interface{}))
+	_, err = fakeTracker.DetectionsFromCamera(ctx, "", emptyMap)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Test invalid camera name in ClassificationsFromCamera
-	_, err = fakeTracker.ClassificationsFromCamera(ctx, invalidName, 0, make(map[string]interface{}))
+	_, err = fakeTracker.ClassificationsFromCamera(ctx, invalidName, 0, emptyMap)
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
 
 	// Test empty (valid) camera name in ClassificationsFromCamera
-	_, err = fakeTracker.ClassificationsFromCamera(ctx, "", 0, make(map[string]interface{}))
+	_, err = fakeTracker.ClassificationsFromCamera(ctx, "", 0, emptyMap)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Test invalid camera name in CaptureAllFromCamera
-	_, err = fakeTracker.CaptureAllFromCamera(ctx, invalidName, viscapture.CaptureOptions{ReturnImage: true}, make(map[string]interface{}))
+	_, err = fakeTracker.CaptureAllFromCamera(ctx, invalidName, viscapture.CaptureOptions{ReturnImage: true}, emptyMap)
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
+
+	// Test empty (valid) camera name in CaptureAllFromCamera
+	_, err = fakeTracker.CaptureAllFromCamera(ctx, "", viscapture.CaptureOptions{ReturnImage: true}, emptyMap)
+	test.That(t, err, test.ShouldBeNil)
 }
