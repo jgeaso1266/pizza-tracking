@@ -17,6 +17,7 @@ import (
 	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/rdk/vision/classification"
 	objdet "go.viam.com/rdk/vision/objectdetection"
+	"go.viam.com/rdk/vision/viscapture"
 	"go.viam.com/test"
 )
 
@@ -206,7 +207,7 @@ func TestTracker(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	matches := HA.Execute()
 	lostDetections := []*track{}
-	for idx, _ := range matches {
+	for idx := range matches {
 		if matches[idx] == -1 {
 			lostDetections = append(lostDetections, renamedOld[idx])
 		}
@@ -247,7 +248,7 @@ func TestTracker(t *testing.T) {
 	HA, _ = hg.NewHungarianAlgorithm(matchMtx)
 	matches = HA.Execute()
 	lostDetections = []*track{}
-	for idx, _ := range fakeTracker.lastDetections {
+	for idx := range fakeTracker.lastDetections {
 		if matches[idx] == -1 {
 			lostDetections = append(lostDetections, fakeTracker.lastDetections[idx])
 		}
@@ -291,7 +292,7 @@ func TestTracker(t *testing.T) {
 	HA, _ = hg.NewHungarianAlgorithm(matchMtx)
 	matches = HA.Execute()
 	lostDetections = []*track{}
-	for idx, _ := range fakeTracker.lastDetections {
+	for idx := range fakeTracker.lastDetections {
 		if matches[idx] == -1 {
 			lostDetections = append(lostDetections, fakeTracker.lastDetections[idx])
 		}
@@ -363,4 +364,48 @@ func TestTracker(t *testing.T) {
 	fakeTracker.currDetections.mutex.RUnlock()
 	test.That(t, len(currDetections), test.ShouldEqual, 1)
 	checkLabel(t, currDetections[0], LabelDet0)
+}
+
+func TestInvalidCameraNamesError(t *testing.T) {
+	ctx := context.Background()
+	var img image.Image
+	rect := image.Rect(0, 0, 10, 10)
+	img = rimage.NewImageFromBounds(rect)
+
+	fakeTracker := &myTracker{
+		camName:       "test",
+		cancelContext: ctx,
+	}
+	fakeTracker.currImg.Store(&img)
+
+	invalidName := "not-camera"
+	invalidNameErrorMessage := "Camera name given to method, not-camera is not the same as configured camera test"
+	emptyMap := make(map[string]interface{})
+
+	// Test invalid camera name in DetectionsFromCamera
+	_, err := fakeTracker.DetectionsFromCamera(ctx, invalidName, emptyMap)
+	test.That(t, err, test.ShouldNotBeNil)
+	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
+
+	// Test empty (valid) camera name in DetectionsFromCamera
+	_, err = fakeTracker.DetectionsFromCamera(ctx, "", emptyMap)
+	test.That(t, err, test.ShouldBeNil)
+
+	// Test invalid camera name in ClassificationsFromCamera
+	_, err = fakeTracker.ClassificationsFromCamera(ctx, invalidName, 0, emptyMap)
+	test.That(t, err, test.ShouldNotBeNil)
+	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
+
+	// Test empty (valid) camera name in ClassificationsFromCamera
+	_, err = fakeTracker.ClassificationsFromCamera(ctx, "", 0, emptyMap)
+	test.That(t, err, test.ShouldBeNil)
+
+	// Test invalid camera name in CaptureAllFromCamera
+	_, err = fakeTracker.CaptureAllFromCamera(ctx, invalidName, viscapture.CaptureOptions{ReturnImage: true}, emptyMap)
+	test.That(t, err, test.ShouldNotBeNil)
+	test.That(t, err.Error(), test.ShouldContainSubstring, invalidNameErrorMessage)
+
+	// Test empty (valid) camera name in CaptureAllFromCamera
+	_, err = fakeTracker.CaptureAllFromCamera(ctx, "", viscapture.CaptureOptions{ReturnImage: true}, emptyMap)
+	test.That(t, err, test.ShouldBeNil)
 }

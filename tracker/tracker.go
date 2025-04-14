@@ -163,7 +163,7 @@ func newTracker(ctx context.Context, deps resource.Dependencies, conf resource.C
 	}
 	matches := HA.Execute()
 	var lostDetections []*track
-	for idx, _ := range matches {
+	for idx := range matches {
 		if matches[idx] == -1 {
 			// if lost detection is not stable, discard it
 			if renamedOld[idx].isStable() {
@@ -240,7 +240,7 @@ func (t *myTracker) run(stream gostream.VideoStream, cancelableCtx context.Conte
 			// Store the lost detections in the buffer, drop lost detections
 			// if they were not considered stable
 			var lostDetections []*track
-			for idx, _ := range t.lastDetections {
+			for idx := range t.lastDetections {
 				if matches[idx] == -1 {
 					if t.lastDetections[idx].isStable() {
 						lostDetections = append(lostDetections, t.lastDetections[idx])
@@ -431,7 +431,7 @@ func (t *myTracker) DetectionsFromCamera(
 	cameraName string,
 	extra map[string]interface{},
 ) ([]objdet.Detection, error) {
-	if cameraName != t.camName {
+	if cameraName != "" && cameraName != t.camName {
 		return nil, errors.Errorf("Camera name given to method, %v is not the same as configured camera %v", cameraName, t.camName)
 	}
 	select {
@@ -467,7 +467,7 @@ func (t *myTracker) ClassificationsFromCamera(
 	n int,
 	extra map[string]interface{},
 ) (classification.Classifications, error) {
-	if cameraName != t.camName {
+	if cameraName != "" && cameraName != t.camName {
 		return nil, errors.Errorf("Camera name given to method, %v is not the same as configured camera %v", cameraName, t.camName)
 	}
 	if newInstance := t.newInstance.Load(); newInstance {
@@ -514,7 +514,7 @@ func (t *myTracker) CaptureAllFromCamera(
 		return viscapture.VisCapture{}, ctx.Err()
 	default:
 		if opt.ReturnImage {
-			if cameraName != t.camName {
+			if cameraName != "" && cameraName != t.camName {
 				return viscapture.VisCapture{}, errors.Errorf("Camera name given to method, %v is not the same as configured camera %v", cameraName, t.camName)
 			}
 			img = *t.currImg.Load()
